@@ -104,6 +104,15 @@
         }
         /* --- End Background Animation Styles --- */
         
+        /* --- Card Hover Effect (Slide 2) --- */
+        .card-hover-effect {
+            transition: all 0.3s ease-out;
+        }
+        .card-hover-effect:hover {
+            transform: translateY(-8px) perspective(1000px) rotateX(5deg) rotateY(-3deg);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+        }
+        
         /* --- Feature Stack Styles (Slide 5) --- */
         #feature-display-area {
             perspective: 1500px;
@@ -285,16 +294,16 @@
                  <h2 class="text-3xl md:text-4xl font-bold">¡Enfócate en tus Socios, no en el Papeleo!</h2>
                  <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto mb-12">Simplifica la gestión de tu club con beneficios pensados para vos:</p>
                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 text-center">
-                      <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.1s;">
+                      <div class="bg-white p-6 rounded-xl border-t-4 border-blue-200 shadow-sm animated-card card-hover-effect" style="animation-delay: 0.1s;">
                          <h3 class="text-xl font-semibold mb-2">💳 Cobro de Cuotas Simplificado</h3><p class="text-gray-600 text-sm">Automatiza el cobro de cuotas sociales y actividades. Controla la morosidad y facilita los pagos a tus socios con múltiples opciones online.</p>
                      </div>
-                     <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.2s;">
+                     <div class="bg-white p-6 rounded-xl border-t-4 border-blue-200 shadow-sm animated-card card-hover-effect" style="animation-delay: 0.2s;">
                          <h3 class="text-xl font-semibold mb-2">🚀 Matrículas e Inscripciones Ágiles</h3><p class="text-gray-600 text-sm">Gestiona altas de socios, inscripciones a actividades y matrículas de forma digital, eliminando el papeleo y los errores manuales.</p>
                      </div>
-                     <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.3s;">
+                     <div class="bg-white p-6 rounded-xl border-t-4 border-blue-200 shadow-sm animated-card card-hover-effect" style="animation-delay: 0.3s;">
                          <h3 class="text-xl font-semibold mb-2">📊 Control Financiero Total</h3><p class="text-gray-600 text-sm">Accede a informes claros sobre ingresos, egresos y estado de cuentas de socios para tomar decisiones financieras inteligentes.</p>
                      </div>
-                     <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.4s;">
+                     <div class="bg-white p-6 rounded-xl border-t-4 border-blue-200 shadow-sm animated-card card-hover-effect" style="animation-delay: 0.4s;">
                           <h3 class="text-xl font-semibold mb-2">👥 Base de Socios Unificada</h3><p class="text-gray-600 text-sm">Mantén el padrón de socios siempre actualizado y segmentado. Gestiona altas, bajas y cambios de categoría de forma ágil y segura.</p>
                      </div>
                  </div>
@@ -430,8 +439,8 @@
                      </a>
                  </div>
                  <div class="mt-12 md:mt-16 pt-8 border-t border-blue-500/30 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-x-8 gap-y-4 text-sm">
-                      <p><span>📞</span> +54 9 11 4089-5500</p>
-                      <p><span>✉️</span> erev@net-do.com</p>
+                      <p><span>📞</span> +54 9 11 4088-7008</p>
+                      <p><span>✉️</span> administracion@digitaldo.tech</p>
                       <p><span>🌐</span> erev.com.ar</p>
                  </div>
                  <footer class="absolute bottom-6 text-center text-blue-300 text-xs">
@@ -609,6 +618,7 @@
     </script>
 </body>
 </html>
+
 
 
 
