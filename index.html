@@ -251,19 +251,57 @@
         }
        
         @media (max-width: 768px) {
-            body { overflow: auto; }
+            body { 
+                overflow-y: auto; /* Enable scrolling on mobile */
+            }
+            #slide-container {
+                height: auto;
+            }
             .slide {
+                /* Convert slides into stackable sections for mobile */
                 height: auto;
                 min-height: 100vh;
-                padding: 4rem 1rem 6rem 1rem;
+                padding: 6rem 1rem 6rem 1rem;
                 justify-content: flex-start;
-                position: relative;
+                position: relative; /* Change from absolute to relative */
+                transform: none;
+                opacity: 1;
+                pointer-events: auto;
+                display: flex; /* Ensure it's always flex */
             }
             .nav-arrow { width: 40px; height: 40px; }
             #prevBtn { left: 0.5rem; }
             #nextBtn { right: 0.5rem; }
             .progress-dots { bottom: 10px; }
-            .decorative-shape, .footer-arc { display: none; }
+            .decorative-shape, .footer-arc, .animated-bg { display: none; } /* Hide complex backgrounds on mobile */
+            
+            /* Responsive typography */
+            h2 {
+                font-size: 2.25rem; /* Equivalent to text-4xl */
+                line-height: 2.5rem;
+            }
+            p {
+                font-size: 1rem; /* Equivalent to text-base */
+            }
+
+            /* Adjust feature stack for mobile */
+            #feature-display-area {
+                perspective: none;
+                min-height: auto;
+                margin-top: 2rem;
+            }
+            .stacked-card {
+                position: relative;
+                transform: none !important; /* Remove 3D transforms */
+                opacity: 1 !important;
+                display: none; /* Hide all cards by default */
+            }
+            .stacked-card.mobile-active {
+                display: block; /* Only show the active one */
+            }
+            .grid { /* Ensure grids stack properly */
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -470,6 +508,11 @@
             const dotsContainer = document.getElementById('progress-dots-container');
             let isAnimating = false;
 
+            const isMobile = () => window.innerWidth <= 768;
+
+            // Add IDs to slides for scrolling
+            slides.forEach((slide, i) => slide.id = `slide-${i}`);
+
             for (let i = 0; i < totalSlides; i++) {
                 const dot = document.createElement('div');
                 dot.classList.add('dot');
@@ -477,7 +520,7 @@
                 dotsContainer.appendChild(dot);
             }
             const dots = document.querySelectorAll('.dot');
-           
+            
             function updateNav() {
                  dots.forEach((dot, i) => {
                      dot.classList.toggle('active', i === currentSlide);
@@ -486,45 +529,48 @@
                  nextBtn.style.display = currentSlide === totalSlides - 1 ? 'none' : 'flex';
             }
 
-            // --- New goToSlide Function ---
             function goToSlide(index) {
-                if (isAnimating || index === currentSlide || index < 0 || index >= totalSlides) return;
+                if (isAnimating || index === currentSlide) return;
                 isAnimating = true;
 
+                if (isMobile()) {
+                    // On mobile, scroll to the section
+                    const newSlide = document.getElementById(`slide-${index}`);
+                    if (newSlide) {
+                        newSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    currentSlide = index;
+                    updateNav();
+                    isAnimating = false;
+                    return;
+                }
+
+                // --- Desktop animation logic ---
                 const oldSlide = slides[currentSlide];
                 const newSlide = slides[index];
                 
-                // Animate out the old slide
                 oldSlide.classList.remove('active');
                 oldSlide.classList.add('exiting');
-                
-                // Animate in the new slide
-                newSlide.classList.add('active');
 
-                // Update the current slide index and navigation
-                currentSlide = index;
-                updateNav();
-
-                // After the transition, clean up classes and unlock animations
                 setTimeout(() => {
                     oldSlide.classList.remove('exiting');
+                    newSlide.classList.add('active');
+                    currentSlide = index;
+                    updateNav();
                     isAnimating = false;
-                }, 500); // This duration must match the CSS transition duration
+                }, 500); // Match CSS transition duration
             }
-            // --- End of New goToSlide Function ---
 
-            function nextSlide() { goToSlide(currentSlide + 1); }
-            function prevSlide() { goToSlide(currentSlide - 1); }
-           
-            if(startBtn) {
-                startBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    nextSlide();
-                });
-            }
+            function nextSlide() { if(currentSlide < totalSlides - 1) goToSlide(currentSlide + 1); }
+            function prevSlide() { if(currentSlide > 0) goToSlide(currentSlide - 1); }
+            
+            startBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                goToSlide(1);
+            });
             nextBtn.addEventListener('click', nextSlide);
             prevBtn.addEventListener('click', prevSlide);
-           
+            
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'ArrowRight') nextSlide();
                 if (e.key === 'ArrowLeft') prevSlide();
@@ -532,7 +578,6 @@
 
             updateNav();
 
-            // --- Features Section Logic (REWRITTEN for Stacked Cards) ---
             const features = [
                 {
                     icon: '💳', title: 'Gestión de Cuotas Sociales',
@@ -571,6 +616,7 @@
 
                     // Create the corresponding card for the stack
                     const card = document.createElement('div');
+                    card.dataset.index = index;
                     card.className = 'stacked-card';
                     card.innerHTML = `
                         <h3 class="text-2xl font-bold mb-4 flex items-center gap-3"><span class="text-3xl">${feature.icon}</span> ${feature.title}</h3>
@@ -588,37 +634,37 @@
                         btn.classList.toggle('erev-blue', i === selectedIndex);
                     });
 
-                    // Update the card stack
+                    // --- Mobile Logic ---
+                    if (isMobile()) {
+                        stackedCards.forEach((card, i) => {
+                            card.classList.toggle('mobile-active', i === selectedIndex);
+                        });
+                        return;
+                    }
+
+                    // --- Desktop Stack Logic ---
                     stackedCards.forEach((card, i) => {
                         const offset = i - selectedIndex;
                         const absOffset = Math.abs(offset);
 
                         // Define transformations for cards behind the active one
-                        const translateY = absOffset * 20;
                         const scale = 1 - absOffset * 0.05;
-                        const opacity = offset === 0 ? '1' : '0'; // Only show the active card's content clearly initially
-
-                        card.style.transform = `translateY(${translateY}px) scale(${scale})`;
+                        const translateY = offset * 20;
+                        const translateZ = -absOffset * 80;
+                        
+                        card.style.transform = `translateY(${translateY}px) translateZ(${translateZ}px) scale(${scale})`;
+                        card.style.opacity = (offset === 0) ? '1' : (absOffset <= 2 ? '0.5' : '0');
                         card.style.zIndex = features.length - absOffset;
-                        card.style.opacity = offset === 0 ? '1' : '0.5';
-                        card.style.pointerEvents = offset === 0 ? 'auto' : 'none';
-
-                        // Instantly hide cards that are too far back to prevent visual glitches
-                        if (absOffset > 2) {
-                            card.style.opacity = '0';
-                        }
+                        card.style.pointerEvents = (offset === 0) ? 'auto' : 'none';
                     });
                 }
-               
+                
                 if(features.length > 0) {
-                     selectFeature(0);
+                    selectFeature(0);
                 }
             }
         });
     </script>
 </body>
 </html>
-
-
-
 
