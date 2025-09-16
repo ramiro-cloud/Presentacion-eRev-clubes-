@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eRev - Deck Interactivo para Clubes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            overflow: hidden;
+        }
+        .erev-blue { color: #2a7a9f; }
+        .bg-erev-blue { background-color: #2a7a9f; }
+        .border-erev-blue { border-color: #2a7a9f; }
+        .erev-green { color: #10B981; }
+        .bg-erev-green { background-color: #10B981; }
+        .border-erev-green { border-color: #10B981; }
+
+        /* --- New Animation Styles --- */
+        .slide {
+            width: 100%;
+            height: 100vh;
+            display: flex; /* Always flex to avoid display glitches */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out; /* Smooth transitions */
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            overflow: hidden;
+            pointer-events: none; /* Prevents interaction with hidden slides */
+            transform: scale(0.98); /* Start slightly scaled down */
+        }
+        .slide.active {
+            opacity: 1;
+            z-index: 3;
+            pointer-events: auto; /* Allow interaction with the active slide */
+            transform: scale(1); /* Scale to full size */
+        }
+        .slide.exiting {
+           z-index: 2; /* Keep it behind the new slide while animating out */
+        }
+        /* --- End of New Animation Styles --- */
+
+        /* --- Background Animation Styles --- */
+        .slide .animated-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        /* Slide 3 Wavy Background */
+        .slide .animated-bg svg {
+            width: 120%;
+            height: 120%;
+            position: absolute;
+            top: -10%;
+            left: -10%;
+        }
+
+        /* Slide 5 Floating Shapes Background */
+        #slide5-bg-shapes .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(42, 122, 159, 0.06);
+            bottom: -150px; /* Start below the viewport */
+            animation: drift 35s infinite linear;
+        }
+        #slide5-bg-shapes .shape:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-duration: 40s; animation-delay: -2s;}
+        #slide5-bg-shapes .shape:nth-child(2) { width: 120px; height: 120px; left: 20%; animation-duration: 30s; animation-delay: -15s;}
+        #slide5-bg-shapes .shape:nth-child(3) { width: 50px; height: 50px; left: 80%; animation-duration: 50s; animation-delay: -5s; }
+        #slide5-bg-shapes .shape:nth-child(4) { width: 150px; height: 150px; left: 60%; animation-duration: 38s; animation-delay: -10s; background: rgba(16, 185, 129, 0.05); }
+        #slide5-bg-shapes .shape:nth-child(5) { width: 70px; height: 70px; left: 90%; animation-duration: 45s; animation-delay: -25s; }
+        #slide5-bg-shapes .shape:nth-child(6) { width: 90px; height: 90px; left: 40%; animation-duration: 35s; animation-delay: -8s; }
+
+        @keyframes drift {
+            from {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            to {
+                transform: translateY(-120vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        /* --- End Background Animation Styles --- */
+        
+        /* --- Feature Stack Styles (Slide 5) --- */
+        #feature-display-area {
+            perspective: 1500px;
+            position: relative;
+            width: 100%;
+            min-height: 300px; /* Use min-height instead of fixed height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .stacked-card {
+            position: absolute;
+            width: 100%;
+            /* height: 100%; Removed fixed height */
+            padding: 2rem;
+            border-radius: 1.5rem;
+            background-color: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
+            will-change: transform, opacity;
+        }
+        /* --- End Feature Stack Styles --- */
+
+        /* --- Final Slide Background --- */
+        #contact-bg .line {
+            position: absolute;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.2), rgba(255,255,255,0)); /* Increased visibility */
+            animation: drop 15s infinite linear;
+            top: 0;
+            transform: translateY(-100%); /* Start above viewport */
+        }
+        @keyframes drop {
+            from { transform: translateY(-100%); } /* Start above */
+            to { transform: translateY(100vh); }   /* End below */
+        }
+        /* --- End Final Slide Background --- */
+
+        .nav-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .nav-arrow:hover { 
+            transform: translateY(-50%) scale(1.1);
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        #prevBtn { left: 1rem; }
+        #nextBtn { right: 1rem; }
+
+        .progress-dots {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
+            padding: 8px;
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+        .dot.active { 
+            background-color: #2a7a9f; 
+            width: 25px;
+            border-radius: 10px;
+        }
+        .btn-gradient {
+            background: linear-gradient(45deg, #2a7a9f, #3b9ac4);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(42, 122, 159, 0.3);
+        }
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(42, 122, 159, 0.4);
+        }
+
+        .animated-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+        .final-cta-btn { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255, 255, 255, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+
+        .decorative-shape {
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+            animation: float 10s ease-in-out infinite alternate;
+        }
+       
+        .footer-arc {
+            position: absolute;
+            bottom: -70vh;
+            left: -50vw;
+            width: 200vw;
+            height: 100vh;
+            background-color: #3b9ac4;
+            border-radius: 50%;
+            z-index: 1;
+            opacity: 1;
+        }
+
+        @keyframes float {
+            from { transform: translateY(0px) rotate(0deg); }
+            to { transform: translateY(-25px) rotate(10deg); }
+        }
+       
+        @media (max-width: 768px) {
+            body { overflow: auto; }
+            .slide {
+                height: auto;
+                min-height: 100vh;
+                padding: 4rem 1rem 6rem 1rem;
+                justify-content: flex-start;
+                position: relative;
+            }
+            .nav-arrow { width: 40px; height: 40px; }
+            #prevBtn { left: 0.5rem; }
+            #nextBtn { right: 0.5rem; }
+            .progress-dots { bottom: 10px; }
+            .decorative-shape, .footer-arc { display: none; }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div id="slide-container" class="relative w-full h-full">
+        <!-- Slide 1: Hero -->
+        <section class="slide active">
+             <div class="decorative-shape" style="top: 15%; left: 10%; width: 150px; height: 150px; border: 15px solid rgba(42, 122, 159, 0.3); border-radius: 50%; animation-duration: 12s;"></div>
+             <div class="decorative-shape" style="top: 25%; right: 20%; width: 60px; height: 60px; background-color: rgba(16, 185, 129, 0.3); border-radius: 10px; animation-duration: 15s; transform: rotate(45deg);"></div>
+             <div class="text-center relative z-10">
+                 <img src="Logo eRev.png" alt="Logo de eRev" class="mx-auto h-12 mb-6" onerror="this.onerror=null;this.src='https://placehold.co/200x50/ffffff/2a7a9f?text=eRev+Logo';">
+                 <h2 class="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+                     Potenciando la <span class="erev-blue">Gestión de tu Club</span>
+                 </h2>
+                 <p class="mt-6 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+                     Con eRev, la administración de tu club se vuelve <span class="font-semibold text-gray-800">simple y centralizada</span>. Nuestra plataforma <span class="font-semibold erev-blue">automatiza y optimiza</span> tus procesos para que te enfoques en <span class="font-semibold text-gray-800">brindar la mejor experiencia a tus socios.</span>
+                 </p>
+                  <a href="#" id="startBtn" class="mt-10 inline-block btn-gradient text-white font-semibold px-8 py-3 rounded-lg text-lg">
+                     Moderniza. Organiza. Crece.
+                 </a>
+             </div>
+        </section>
+
+        <!-- Slide 2: Beneficios Principales -->
+        <section class="slide">
+            <div class="footer-arc"></div>
+            <div class="container mx-auto px-4 md:px-6 text-center relative z-10">
+                 <h2 class="text-3xl md:text-4xl font-bold">¡Enfócate en tus Socios, no en el Papeleo!</h2>
+                 <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto mb-12">Simplifica la gestión de tu club con beneficios pensados para vos:</p>
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 text-center">
+                      <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.1s;">
+                         <h3 class="text-xl font-semibold mb-2">💳 Cobro de Cuotas Simplificado</h3><p class="text-gray-600 text-sm">Automatiza el cobro de cuotas sociales y actividades. Controla la morosidad y facilita los pagos a tus socios con múltiples opciones online.</p>
+                     </div>
+                     <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.2s;">
+                         <h3 class="text-xl font-semibold mb-2">🚀 Matrículas e Inscripciones Ágiles</h3><p class="text-gray-600 text-sm">Gestiona altas de socios, inscripciones a actividades y matrículas de forma digital, eliminando el papeleo y los errores manuales.</p>
+                     </div>
+                     <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.3s;">
+                         <h3 class="text-xl font-semibold mb-2">📊 Control Financiero Total</h3><p class="text-gray-600 text-sm">Accede a informes claros sobre ingresos, egresos y estado de cuentas de socios para tomar decisiones financieras inteligentes.</p>
+                     </div>
+                     <div class="bg-white p-6 rounded-xl border shadow-sm animated-card hover:scale-105 hover:shadow-xl transition-all duration-300" style="animation-delay: 0.4s;">
+                          <h3 class="text-xl font-semibold mb-2">👥 Base de Socios Unificada</h3><p class="text-gray-600 text-sm">Mantén el padrón de socios siempre actualizado y segmentado. Gestiona altas, bajas y cambios de categoría de forma ágil y segura.</p>
+                     </div>
+                 </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: Cobranza Automática -->
+        <section class="slide">
+            <!-- Animated Background -->
+            <div class="animated-bg">
+                <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgba(42, 122, 159, 0.08);" />
+                            <stop offset="100%" style="stop-color:rgba(59, 154, 196, 0.05);" />
+                        </linearGradient>
+                        <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgba(16, 185, 129, 0.06);" />
+                            <stop offset="100%" style="stop-color:rgba(42, 122, 159, 0.07);" />
+                        </linearGradient>
+                    </defs>
+                    <path fill="url(#grad1)" d="M -10,50 C 15,120 40,-20 70,50 S 110,-20 130,50 V 110 H -10 Z">
+                        <animateTransform attributeName="transform" type="translate" values="0,0; -20,0; 0,0" dur="25s" repeatCount="indefinite"/>
+                    </path>
+                    <path fill="url(#grad2)" d="M -10,50 C 15,10 40,120 70,50 S 110,120 130,50 V 110 H -10 Z">
+                        <animateTransform attributeName="transform" type="translate" values="0,0; 20,0; 0,0" dur="30s" repeatCount="indefinite"/>
+                    </path>
+                </svg>
+            </div>
+             <div class="decorative-shape" style="bottom: 10%; left: 5%; width: 120px; height: 120px; background-color: rgba(42, 122, 159, 0.2); border-radius: 50%; animation-duration: 9s;"></div>
+            <div class="container mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-16 items-center max-w-6xl relative z-10">
+                <div class="md:col-span-2 text-center">
+                    <div class="text-8xl md:text-9xl erev-blue">💸</div>
+                </div>
+                <div class="md:col-span-3 text-left">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-6">Cobro de Cuotas <span class="erev-blue">sin Complicaciones</span></h2>
+                    <p class="mt-6 text-lg text-gray-600 leading-relaxed border-l-4 border-erev-blue pl-4 md:pl-6 bg-gray-50 py-4 rounded-r-lg">
+                        Cada pago de un socio <b class="erev-blue">se imputa al instante</b> en su cuenta y <b class="erev-blue">se refleja en la contabilidad</b> del club, minimizando errores y optimizando tu tiempo. El <b class="erev-blue">recibo se genera y envía automáticamente</b>, brindando tranquilidad a tu gestión.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Solución / Equipo -->
+        <section class="slide">
+             <div class="container mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10">
+                <div class="text-center md:text-left">
+                    <h2 class="text-3xl md:text-4xl font-bold">La plataforma que <span class="erev-blue">tu club merece</span>.</h2>
+                    <p class="mt-6 text-lg text-gray-600">Con eRev, obtienes un socio tecnológico. Trabajamos a tu lado para automatizar y simplificar la gestión, ayudándote a ahorrar tiempo y a profesionalizar la administración de tu club.</p>
+                    <div class="mt-8 bg-green-50 border-l-4 border-erev-green p-6 rounded-r-lg shadow-sm">
+                        <p class="text-xl font-semibold text-gray-800">Nuestro concepto: <span class="erev-green">"easy-solutions"</span>.</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-2 border-2 border-blue-200">
+                    <img src="3.jpg" alt="Dashboard de eRev que muestra métricas y gráficos" class="w-full rounded-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/ffffff/e0e0e0?text=Dashboard+Preview';">
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: Funcionalidades -->
+        <section class="slide">
+             <!-- Animated Background -->
+            <div class="animated-bg" id="slide5-bg-shapes">
+                <div class="shape"></div>
+                <div class="shape"></div>
+                <div class="shape"></div>
+                <div class="shape"></div>
+                <div class="shape"></div>
+                <div class="shape"></div>
+            </div>
+            <div class="container mx-auto px-4 md:px-6 w-full max-w-6xl relative z-10">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold">Un <span class="erev-blue">aliado</span> en cada área de tu club.</h2>
+                    <p class="mt-4 text-gray-600 max-w-3xl mx-auto">Explora nuestras funcionalidades y descubre cómo podemos potenciar tu gestión.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 md:items-center">
+                    <div class="md:col-span-1 space-y-3" id="features-list">
+                        <!-- Features will be injected here by JS -->
+                    </div>
+                    <div class="md:col-span-2">
+                        <div id="feature-display-area">
+                            <!-- Stacked cards will be injected here by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Beneficios -->
+        <section class="slide">
+            <div class="footer-arc"></div>
+            <div class="container mx-auto px-4 md:px-6 w-full max-w-5xl text-center relative z-10">
+                 <div class="mb-10">
+                      <h2 class="text-3xl md:text-4xl font-bold">Transforma la <span class="erev-blue">gestión</span>, potencia el <span class="erev-green">deporte</span>.</h2>
+                      <p class="mt-6 text-base md:text-lg text-gray-500 leading-relaxed max-w-4xl mx-auto">
+                          ¿La administración te quita tiempo para enfocarte en lo deportivo? ¿El seguimiento de cuotas es un dolor de cabeza? ¿La comunicación con los socios es dispersa?
+                      </p>
+                 </div>
+                 <div class="bg-white rounded-xl border shadow-lg w-full p-6 md:p-8 text-left">
+                     <h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-6">Con eRev, convierte los desafíos en resultados:</h3>
+                     <div class="space-y-4 mb-8 text-gray-700">
+                         <p><b><span class="erev-blue">Más tiempo para el club:</span></b> Automatiza tareas y gana hasta un <b>80% de tiempo administrativo</b> para dedicar a socios y actividades.</p>
+                         <p><b><span class="erev-blue">Tesorería saludable:</span></b> Reduce hasta un <b>75% la morosidad</b> con un sistema de cobro y seguimiento eficaz.</p>
+                         <p><b><span class="erev-blue">Comunicación efectiva:</span></b> Centraliza los comunicados y noticias, fortaleciendo el sentido de pertenencia.</p>
+                         <p><b><span class="erev-blue">Control total:</span></b> Accede a toda la información de tu club desde una única plataforma, estés donde estés.</p>
+                     </div>
+                      <div class="border-t pt-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                         <div class="flex items-center gap-3"><div class="bg-blue-100 erev-blue rounded-full font-bold w-10 h-10 flex-shrink-0 flex items-center justify-center text-xl">⏰</div><p><b>Ahorra Tiempo:</b> Reduce drásticamente las horas dedicadas a tareas repetitivas.</p></div>
+                         <div class="flex items-center gap-3"><div class="bg-green-100 erev-green rounded-full font-bold w-10 h-10 flex-shrink-0 flex items-center justify-center text-xl">💰</div><p><b>Optimiza Recursos:</b> Minimiza errores y mejora tu tasa de cobranza.</p></div>
+                         <div class="flex items-center gap-3"><div class="bg-blue-100 erev-blue rounded-full font-bold w-10 h-10 flex-shrink-0 flex items-center justify-center text-xl">❤️</div><p><b>Fideliza a tus Socios:</b> Mejora la comunicación y la satisfacción general.</p></div>
+                     </div>
+                 </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: Contacto -->
+        <section class="slide bg-erev-blue text-white">
+            <!-- Animated Background for Contact Slide -->
+            <div class="animated-bg" id="contact-bg">
+                <div class="line" style="left: 10%; width: 1px; animation-duration: 20s; animation-delay: -5s;"></div>
+                <div class="line" style="left: 20%; width: 2px; animation-duration: 15s; animation-delay: -12s;"></div>
+                <div class="line" style="left: 35%; width: 1px; animation-duration: 25s; animation-delay: -2s;"></div>
+                <div class="line" style="left: 55%; width: 2px; animation-duration: 18s; animation-delay: -15s;"></div>
+                <div class="line" style="left: 70%; width: 1px; animation-duration: 22s; animation-delay: 0s;"></div>
+                <div class="line" style="left: 90%; width: 2px; animation-duration: 16s; animation-delay: -8s;"></div>
+            </div>
+            <div class="text-center relative z-10">
+                 <h2 class="text-3xl md:text-5xl font-bold">Lleva tu club al siguiente nivel</h2>
+                 <p class="mt-4 text-lg md:text-xl text-blue-100 max-w-2xl mx-auto">El futuro de la gestión deportiva está a un clic de distancia.</p>
+                 <div class="mt-12">
+                     <a href="https://api.whatsapp.com/send?phone=541140887008&text=Hola!%20Quisiera%20saber%20mas%20informaci%C3%B3n" target="_blank" rel="noopener noreferrer" class="bg-white erev-blue font-bold px-8 md:px-10 py-3 md:py-4 rounded-lg hover:bg-gray-100 transition-all text-lg md:text-xl inline-block final-cta-btn">
+                         Solicitar una Demo
+                     </a>
+                 </div>
+                 <div class="mt-12 md:mt-16 pt-8 border-t border-blue-500/30 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-x-8 gap-y-4 text-sm">
+                      <p><span>📞</span> +54 9 11 4089-5500</p>
+                      <p><span>✉️</span> erev@net-do.com</p>
+                      <p><span>🌐</span> erev.com.ar</p>
+                 </div>
+                 <footer class="absolute bottom-6 text-center text-blue-300 text-xs">
+                     <p>&copy; 2024 eRev by Net-Do. Todos los derechos reservados.</p>
+                 </footer>
+            </div>
+        </section>
+    </div>
+
+    <div id="prevBtn" class="nav-arrow">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+    </div>
+    <div id="nextBtn" class="nav-arrow">
+         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+    </div>
+
+    <div id="progress-dots-container" class="progress-dots"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let currentSlide = 0;
+            const slides = document.querySelectorAll('.slide');
+            const totalSlides = slides.length;
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const startBtn = document.getElementById('startBtn');
+            const dotsContainer = document.getElementById('progress-dots-container');
+            let isAnimating = false;
+
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('dot');
+                dot.addEventListener('click', () => goToSlide(i));
+                dotsContainer.appendChild(dot);
+            }
+            const dots = document.querySelectorAll('.dot');
+           
+            function updateNav() {
+                 dots.forEach((dot, i) => {
+                     dot.classList.toggle('active', i === currentSlide);
+                 });
+                 prevBtn.style.display = currentSlide === 0 ? 'none' : 'flex';
+                 nextBtn.style.display = currentSlide === totalSlides - 1 ? 'none' : 'flex';
+            }
+
+            // --- New goToSlide Function ---
+            function goToSlide(index) {
+                if (isAnimating || index === currentSlide || index < 0 || index >= totalSlides) return;
+                isAnimating = true;
+
+                const oldSlide = slides[currentSlide];
+                const newSlide = slides[index];
+                
+                // Animate out the old slide
+                oldSlide.classList.remove('active');
+                oldSlide.classList.add('exiting');
+                
+                // Animate in the new slide
+                newSlide.classList.add('active');
+
+                // Update the current slide index and navigation
+                currentSlide = index;
+                updateNav();
+
+                // After the transition, clean up classes and unlock animations
+                setTimeout(() => {
+                    oldSlide.classList.remove('exiting');
+                    isAnimating = false;
+                }, 500); // This duration must match the CSS transition duration
+            }
+            // --- End of New goToSlide Function ---
+
+            function nextSlide() { goToSlide(currentSlide + 1); }
+            function prevSlide() { goToSlide(currentSlide - 1); }
+           
+            if(startBtn) {
+                startBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    nextSlide();
+                });
+            }
+            nextBtn.addEventListener('click', nextSlide);
+            prevBtn.addEventListener('click', prevSlide);
+           
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight') nextSlide();
+                if (e.key === 'ArrowLeft') prevSlide();
+            });
+
+            updateNav();
+
+            // --- Features Section Logic (REWRITTEN for Stacked Cards) ---
+            const features = [
+                {
+                    icon: '💳', title: 'Gestión de Cuotas Sociales',
+                    description: 'Automatiza la generación y el envío de cuotas. Ofrece múltiples medios de pago online y controla el estado de cuenta de cada socio en tiempo real.'
+                },
+                {
+                    icon: '💰', title: 'Múltiples Medios de Pago',
+                    description: 'Ofrece a los socios y responsables de pago una amplia variedad de opciones para abonar online, facilitando el proceso y mejorando la experiencia.'
+                },
+                {
+                    icon: '👥', title: 'Padrón de Socios Digital',
+                    description: 'Mantén una base de datos única y actualizada de todos los socios. Administra categorías, grupos familiares y datos de contacto de forma segura.'
+                },
+                {
+                    icon: '💬', title: 'Comunicación Centralizada',
+                    description: 'Envía noticias, notificaciones importantes y comunicados a todos los socios o a grupos específicos a través de una única plataforma.'
+                },
+                {
+                    icon: '📊', title: 'Informes de Gestión',
+                    description: 'Obtén reportes financieros, de ocupación de espacios y de estado de socios para tomar decisiones estratégicas que impulsen el crecimiento del club.'
+                }
+            ];
+
+            const featuresListContainer = document.getElementById('features-list');
+            const featureDisplayArea = document.getElementById('feature-display-area');
+            const stackedCards = [];
+
+            if (featuresListContainer && featureDisplayArea) {
+                features.forEach((feature, index) => {
+                    // Create the button in the left list
+                    const featureButton = document.createElement('button');
+                    featureButton.className = 'feature-item text-left p-4 rounded-lg w-full transition-all duration-300 flex items-center gap-4';
+                    featureButton.innerHTML = `<span class="text-2xl">${feature.icon}</span><span class="font-semibold">${feature.title}</span>`;
+                    featureButton.onclick = () => selectFeature(index);
+                    featuresListContainer.appendChild(featureButton);
+
+                    // Create the corresponding card for the stack
+                    const card = document.createElement('div');
+                    card.className = 'stacked-card';
+                    card.innerHTML = `
+                        <h3 class="text-2xl font-bold mb-4 flex items-center gap-3"><span class="text-3xl">${feature.icon}</span> ${feature.title}</h3>
+                        <p class="text-gray-600 text-lg">${feature.description}</p>
+                    `;
+                    featureDisplayArea.appendChild(card);
+                    stackedCards.push(card);
+                });
+
+                function selectFeature(selectedIndex) {
+                    // Update active state on the left list buttons
+                    const buttons = featuresListContainer.querySelectorAll('.feature-item');
+                    buttons.forEach((btn, i) => {
+                        btn.classList.toggle('bg-blue-100', i === selectedIndex);
+                        btn.classList.toggle('erev-blue', i === selectedIndex);
+                    });
+
+                    // Update the card stack
+                    stackedCards.forEach((card, i) => {
+                        const offset = i - selectedIndex;
+                        const absOffset = Math.abs(offset);
+
+                        // Define transformations for cards behind the active one
+                        const translateY = absOffset * 20;
+                        const scale = 1 - absOffset * 0.05;
+                        const opacity = offset === 0 ? '1' : '0'; // Only show the active card's content clearly initially
+
+                        card.style.transform = `translateY(${translateY}px) scale(${scale})`;
+                        card.style.zIndex = features.length - absOffset;
+                        card.style.opacity = offset === 0 ? '1' : '0.5';
+                        card.style.pointerEvents = offset === 0 ? 'auto' : 'none';
+
+                        // Instantly hide cards that are too far back to prevent visual glitches
+                        if (absOffset > 2) {
+                            card.style.opacity = '0';
+                        }
+                    });
+                }
+               
+                if(features.length > 0) {
+                     selectFeature(0);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
